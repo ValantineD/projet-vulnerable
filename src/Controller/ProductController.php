@@ -93,18 +93,22 @@ class ProductController extends Controller
          *  - $_SESSION['error'] = "Invalid CSRF token";
          *  - $this->redirect("/product/{$product->getSlug()}/{$product->getId()}");
          */
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $productRepository = new ProductRepository();
-            $product = $productRepository->findById($id);
+        $productRepository = new ProductRepository();
+        $product = $productRepository->findById($id) ?: $productRepository->findBySlug($slug);
 
-            if (!$product) {
-                throw new \Exception('Product not found', 404);
-            }
+        if (!$product) {
+            throw new \Exception('Product not found', 404);
+        }
 
+        if ($_POST['csrf_token'] === $_SESSION['csrf_token']) {
             $entityManager = new EntityManager();
             $entityManager->delete($product);
 
             $this->redirect('/');
+        } else {
+            $_SESSION['error'] = "invalid csrf token";
+            $this->redirect("/product/{$product->getSlug()}/{$product->getId()}");
         }
+
     }
 }
